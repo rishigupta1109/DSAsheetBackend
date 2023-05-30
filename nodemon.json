@@ -1,0 +1,9 @@
+{
+  "env": {
+    "DB_USER": "grishi634",
+    "DB_PASSWORD": "HbErThcgEXEvJ9Pq",
+    "DB_NAME": "dsasheets",
+    "FRONTEND_URL": "http://localhost:3000",
+    "SECRET_KEY": "dsa_sheets"
+  }
+}
