@@ -12,6 +12,10 @@ const Note = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Question",
   },
+  topicId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Topic",
+  },
 });
 
 module.exports = mongoose.model("Note", Note);

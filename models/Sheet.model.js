@@ -8,18 +8,6 @@ const Sheet = mongoose.Schema({
     type: String,
     required: true,
   },
-  topics: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Topic",
-    },
-  ],
-  questions: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Question",
-    },
-  ],
 });
 
 module.exports = mongoose.model("Sheet", Sheet);
