@@ -3,6 +3,7 @@ const HttpError = require("../models/HttpError");
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ProgressModel = require("../models/Progress.model.js");
 
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
@@ -101,6 +102,99 @@ exports.validateSession = async (req, res, next) => {
       isAdmin: existingUser.isAdmin,
     });
   } catch (err) {
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+
+exports.findUser = async (req, res, next) => {
+  const { query } = req.body;
+  try {
+    const users = await User.find({
+      username: { $regex: query, $options: "i" },
+    });
+    res.status(200).json({
+      users: users,
+    });
+  } catch (err) {
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+
+exports.toggleFriend = async (req, res, next) => {
+  const { userId, friendId } = req.body;
+  try {
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      return next(new HttpError("User not found", 404));
+    }
+    if (user.friends.includes(friendId)) {
+      user.friends.pull(friendId);
+      await user.save();
+      return res.status(200).json({
+        message: "Friend removed successfully",
+      });
+    }
+    user.friends.push(friendId);
+    await user.save();
+    res.status(200).json({
+      message: "Friend added successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+
+exports.getLeaderBoardData = async (req, res, next) => {
+  const { userId, sheetId, duration } = req.body;
+  try {
+    const userProgress = await ProgressModel.find({
+      userId: userId,
+      sheetId: sheetId,
+      completedAt: {
+        $gte: new Date(
+          new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
+        ),
+      },
+    });
+    console.log(userProgress);
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      return next(new HttpError("User not found", 404));
+    }
+    const friends = user?.friends;
+    const leaderboard = [];
+    leaderboard.push({
+      name: user?.name,
+      username: user?.username,
+      questions: userProgress?.length || 0,
+    });
+    if (friends.length === 0)
+      return res.status(200).json({
+        leaderboard: leaderboard,
+      });
+    for (let i = 0; i < friends.length; i++) {
+      const friend = await User.findOne({ _id: friends[i] });
+      const friendProgress = await ProgressModel.find({
+        userId: friends[i],
+        sheetId: sheetId,
+        completedAt: {
+          $gte: new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000,
+        },
+      });
+      if (friendProgress) {
+        leaderboard.push({
+          name: friend?.name,
+          username: friend?.username,
+          questions: friendProgress?.length,
+        });
+      }
+      return res.status(200).json({
+        leaderboard: leaderboard,
+      });
+    }
+  } catch (err) {
+    console.log(err);
     return next(new HttpError("Something went wrong", 500));
   }
 };

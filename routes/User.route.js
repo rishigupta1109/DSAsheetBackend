@@ -27,4 +27,7 @@ router.post(
   userController.checkUsername
 );
 router.get("/validate-session", checkAuth, userController.validateSession);
+router.post("/find-friends", checkAuth, userController.findUser);
+router.post("/toggle-friend", checkAuth, userController.toggleFriend);
+router.post("/leaderboard", checkAuth, userController.getLeaderBoardData);
 exports.userRoutes = router;

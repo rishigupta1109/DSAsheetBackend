@@ -4,6 +4,7 @@
     "DB_PASSWORD": "HbErThcgEXEvJ9Pq",
     "DB_NAME": "dsasheets",
     "FRONTEND_URL": "http://localhost:3000",
-    "SECRET_KEY": "dsa_sheets"
+    "SECRET_KEY": "dsa_sheets",
+    "DB": "test"
   }
 }
