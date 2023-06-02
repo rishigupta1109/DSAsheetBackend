@@ -41,11 +41,12 @@ exports.getSheets = async (req, res, next) => {
         sheetId: sheet?._id,
       });
       sheet.topics = topics;
+      sheet.questions = [];
       for (let topic of topics) {
         const questions = await QuestionModel.find({
           topicId: { $in: topic._id },
         });
-        sheet.questions = questions;
+        sheet.questions.push(questions);
       }
       sheetsWithData?.push(sheet);
     }
