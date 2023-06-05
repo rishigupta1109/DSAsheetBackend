@@ -2,7 +2,7 @@
   "env": {
     "DB_USER": "grishi634",
     "DB_PASSWORD": "HbErThcgEXEvJ9Pq",
-    "DB_NAME": "dsasheets",
+    "DB_NAME": "dsasheets.z0nv6c1",
     "FRONTEND_URL": "http://localhost:3000",
     "SECRET_KEY": "dsa_sheets",
     "DB": "test"

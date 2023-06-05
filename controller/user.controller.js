@@ -182,17 +182,15 @@ exports.getLeaderBoardData = async (req, res, next) => {
           $gte: new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000,
         },
       });
-      if (friendProgress) {
-        leaderboard.push({
-          name: friend?.name,
-          username: friend?.username,
-          questions: friendProgress?.length,
-        });
-      }
-      return res.status(200).json({
-        leaderboard: leaderboard,
+      leaderboard.push({
+        name: friend?.name,
+        username: friend?.username,
+        questions: friendProgress?.length || 0,
       });
     }
+    return res.status(200).json({
+      leaderboard: leaderboard,
+    });
   } catch (err) {
     console.log(err);
     return next(new HttpError("Something went wrong", 500));
