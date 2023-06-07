@@ -147,6 +147,54 @@ exports.toggleFriend = async (req, res, next) => {
 exports.getLeaderBoardData = async (req, res, next) => {
   const { userId, sheetId, duration } = req.body;
   try {
+    if (sheetId === "ALL") {
+      const userProgress = await ProgressModel.find({
+        userId: userId,
+        completedAt: {
+          $gte: new Date(
+            new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
+          ),
+        },
+      });
+      console.log(userProgress);
+
+      const user = await User.findOne({ _id: userId });
+      if (!user) {
+        return next(new HttpError("User not found", 404));
+      }
+      const friends = user?.friends;
+      const leaderboard = [];
+      leaderboard.push({
+        name: user?.name,
+        username: user?.username,
+        questions: userProgress?.length || 0,
+      });
+      if (friends.length === 0)
+        return res.status(200).json({
+          leaderboard: leaderboard,
+        });
+      for (let i = 0; i < friends.length; i++) {
+        const friend = await User.findOne({ _id: friends[i] });
+        const friendProgress = await ProgressModel.find({
+          userId: friends[i],
+          completedAt: {
+            $gte: new Date(
+              new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
+            ),
+          },
+        });
+        leaderboard.push({
+          name: friend?.name,
+          username: friend?.username,
+          questions: friendProgress?.length || 0,
+        });
+      }
+      leaderboard.sort((a, b) => b.questions - a.questions);
+      return res.status(200).json({
+        leaderboard: leaderboard,
+      });
+    }
+
     const userProgress = await ProgressModel.find({
       userId: userId,
       sheetId: sheetId,
