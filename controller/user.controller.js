@@ -152,8 +152,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
         userId: userId,
         completedAt: {
           $gte: new Date(
-            new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
-          ),
+            Date.now() - duration * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
       });
       console.log(userProgress);
@@ -179,8 +179,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
           userId: friends[i],
           completedAt: {
             $gte: new Date(
-              new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
-            ),
+              Date.now() - duration * 24 * 60 * 60 * 1000
+            ).toISOString(),
           },
         });
         leaderboard.push({
@@ -200,8 +200,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
       sheetId: sheetId,
       completedAt: {
         $gte: new Date(
-          new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000
-        ),
+          Date.now() - duration * 24 * 60 * 60 * 1000
+        ).toISOString(),
       },
     });
     console.log(userProgress);
@@ -226,7 +226,9 @@ exports.getLeaderBoardData = async (req, res, next) => {
         userId: friends[i],
         sheetId: sheetId,
         completedAt: {
-          $gte: new Date().getMilliseconds() - duration * 24 * 60 * 60 * 1000,
+          $gte: new Date(
+            Date.now() - duration * 24 * 60 * 60 * 1000
+          ).toISOString(),
         },
       });
       leaderboard.push({
