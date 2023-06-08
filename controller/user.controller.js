@@ -99,6 +99,8 @@ exports.validateSession = async (req, res, next) => {
       name: existingUser.name,
       friends: existingUser.friends,
       isAdmin: existingUser.isAdmin,
+      dailyGoal: existingUser.dailyGoal,
+      revisitDays: existingUser.revisitDays,
     });
   } catch (err) {
     return next(new HttpError("Something went wrong", 500));
@@ -254,6 +256,28 @@ exports.getLeaderBoardData = async (req, res, next) => {
     }
     return res.status(200).json({
       leaderboard: leaderboard,
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+
+exports.updateUser = async (req, res, next) => {
+  const { userId, name, dailyGoal, revisitDays } = req.body;
+  console.log(req.body);
+  try {
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        name: name,
+        dailyGoal: parseInt(dailyGoal) || 0,
+        revisitDays: parseInt(revisitDays) || 0,
+      }
+    );
+    res.status(200).json({
+      user: user,
+      message: "User updated successfully",
     });
   } catch (err) {
     console.log(err);

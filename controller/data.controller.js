@@ -78,10 +78,15 @@ exports.getSheets = async (req, res, next) => {
             notes?.find((n) => {
               return n.questionId.toString() === question._id.toString();
             })?.content || "";
+          question.completedAt =
+            progress?.find((p) => {
+              return p.questionId.toString() === question._id.toString();
+            })?.completedAt || "";
           return {
             ...question._doc,
             isCompleted: question?.isCompleted,
             notes: question?.notes,
+            completedAt: question?.completedAt,
           };
         }),
       };

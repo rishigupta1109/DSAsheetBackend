@@ -30,4 +30,6 @@ router.get("/validate-session", checkAuth, userController.validateSession);
 router.post("/find-friends", checkAuth, userController.findUser);
 router.post("/toggle-friend", checkAuth, userController.toggleFriend);
 router.post("/leaderboard", checkAuth, userController.getLeaderBoardData);
+router.patch("/update", checkAuth, userController.updateUser);
+
 exports.userRoutes = router;

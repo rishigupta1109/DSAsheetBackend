@@ -28,5 +28,13 @@ const User = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  dailyGoal: {
+    type: Number,
+    default: 5,
+  },
+  revisitDays: {
+    type: Number,
+    default: 5,
+  },
 });
 module.exports = mongoose.model("User", User);
