@@ -64,7 +64,7 @@ exports.getSheets = async (req, res, next) => {
     const notes = await NotesModel.find({
       userId: userid,
     });
-    console.log(userid, progress, notes);
+    // console.log(userid, progress, notes);
     let sheetsWithProgress = [];
     sheetsWithProgress = sheetsWithData.map((sheet) => {
       return {
@@ -145,7 +145,7 @@ exports.createQuestion = async (req, res, next) => {
 exports.createMultipleQuestions = async (req, res, next) => {
   const { questions } = req.body;
   try {
-    console.log(questions);
+    // console.log(questions);
     const createdQuestions = await QuestionModel.insertMany(questions);
     res.status(201).json({
       createdQuestions: createdQuestions,

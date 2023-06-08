@@ -147,16 +147,37 @@ exports.toggleFriend = async (req, res, next) => {
 exports.getLeaderBoardData = async (req, res, next) => {
   const { userId, sheetId, duration } = req.body;
   try {
+    let dayToCompare;
+    if (duration === 1) {
+      let date = new Date().getDate();
+      let month = new Date().getMonth();
+      month++;
+      let year = new Date().getFullYear();
+      if (date < 10) date = `0${date}`;
+      if (month < 10) month = `0${month}`;
+
+      console.log(
+        date,
+        month,
+        year,
+        new Date(`${year}-${month}-${date}T00:00:00.000`)
+      );
+      dayToCompare = new Date(
+        `${year}-${month}-${date}T00:00:00.000`
+      ).toISOString();
+    } else {
+      dayToCompare = new Date(
+        Date.now() - duration * 24 * 60 * 60 * 1000
+      ).toISOString();
+    }
     if (sheetId === "ALL") {
       const userProgress = await ProgressModel.find({
         userId: userId,
         completedAt: {
-          $gte: new Date(
-            Date.now() - duration * 24 * 60 * 60 * 1000
-          ).toISOString(),
+          $gte: dayToCompare,
         },
       });
-      console.log(userProgress);
+      // console.log(userProgress);
 
       const user = await User.findOne({ _id: userId });
       if (!user) {
@@ -178,9 +199,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
         const friendProgress = await ProgressModel.find({
           userId: friends[i],
           completedAt: {
-            $gte: new Date(
-              Date.now() - duration * 24 * 60 * 60 * 1000
-            ).toISOString(),
+            $gte: dayToCompare,
           },
         });
         leaderboard.push({
@@ -199,12 +218,10 @@ exports.getLeaderBoardData = async (req, res, next) => {
       userId: userId,
       sheetId: sheetId,
       completedAt: {
-        $gte: new Date(
-          Date.now() - duration * 24 * 60 * 60 * 1000
-        ).toISOString(),
+        $gte: dayToCompare,
       },
     });
-    console.log(userProgress);
+    // console.log(userProgress);
     const user = await User.findOne({ _id: userId });
     if (!user) {
       return next(new HttpError("User not found", 404));
@@ -226,9 +243,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
         userId: friends[i],
         sheetId: sheetId,
         completedAt: {
-          $gte: new Date(
-            Date.now() - duration * 24 * 60 * 60 * 1000
-          ).toISOString(),
+          $gte: dayToCompare,
         },
       });
       leaderboard.push({
