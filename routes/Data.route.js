@@ -10,6 +10,7 @@ const {
   createProgress,
   deleteSheet,
   deleteTopic,
+  toggleRevisited,
 } = require("../controller/data.controller");
 const checkAuth = require("../middlewares/check-auth");
 const isAdmin = require("../middlewares/isAdmin");
@@ -27,5 +28,6 @@ router.post("/multiple-questions", checkAuth, isAdmin, createMultipleQuestions);
 router.get("/questions/:topicId", getQuestions);
 router.post("/progress", checkAuth, createProgress);
 router.post("/note", checkAuth, createNote);
+router.post("/revisited", checkAuth, toggleRevisited);
 
 exports.dataRoutes = router;

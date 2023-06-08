@@ -4,6 +4,7 @@ const ProgressModel = require("../models/Progress.model");
 const QuestionModel = require("../models/Question.model");
 const Sheet = require("../models/Sheet.model");
 const Topic = require("../models/Topic.model");
+var ObjectId = require("mongoose").Types.ObjectId;
 exports.createSheet = async (req, res, next) => {
   const { title, description } = req.body;
   const topics = [],
@@ -82,11 +83,16 @@ exports.getSheets = async (req, res, next) => {
             progress?.find((p) => {
               return p.questionId.toString() === question._id.toString();
             })?.completedAt || "";
+          question.revisited =
+            progress?.find((p) => {
+              return p.questionId.toString() === question._id.toString();
+            })?.revisited || false;
           return {
             ...question._doc,
             isCompleted: question?.isCompleted,
             notes: question?.notes,
             completedAt: question?.completedAt,
+            revisited: question?.revisited,
           };
         }),
       };
@@ -247,6 +253,7 @@ exports.createNote = async (req, res, next) => {
 
 exports.createProgress = async (req, res, next) => {
   const { questionId, topicId, userId, sheetId } = req.body;
+  console.log(req.body);
   try {
     const exists = await ProgressModel.findOne({
       questionId,
@@ -274,6 +281,45 @@ exports.createProgress = async (req, res, next) => {
     await progress.save();
     res.status(201).json({
       message: "Progress created successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+exports.toggleRevisited = async (req, res, next) => {
+  const { questionId, topicId, userId, sheetId } = req.body;
+
+  console.log(req.body);
+  try {
+    const exists = await ProgressModel.findOne({
+      questionId,
+      topicId,
+      userId,
+      sheetId,
+    });
+    console.log(exists);
+    if (!exists) {
+      return res.status(404).json({
+        message: "Progress not found",
+      });
+    }
+
+    let prog = await ProgressModel.updateOne(
+      {
+        questionId,
+        topicId,
+        userId,
+        sheetId,
+      },
+      { revisited: !exists?.revisited },
+      {
+        new: true,
+      }
+    );
+    console.log(prog);
+    res.status(200).json({
+      message: "Revisited toggled successfully",
     });
   } catch (err) {
     console.log(err);
@@ -322,3 +368,10 @@ exports.deleteTopic = async (req, res, next) => {
     return next(new HttpError("Something went wrong", 500));
   }
 };
+
+// {
+//   questionId: '64773a3209a33cf1a3ea6f55',
+//   userId: '647d93bd2ff12941fa1ef7e8',
+//   topicId: '6477393e09a33cf1a3ea6f51',
+//   sheetId: '64763ff62ae6540f7acd8415'
+// }
