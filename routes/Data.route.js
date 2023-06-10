@@ -11,6 +11,7 @@ const {
   deleteSheet,
   deleteTopic,
   toggleRevisited,
+  toggleBookmark,
 } = require("../controller/data.controller");
 const checkAuth = require("../middlewares/check-auth");
 const isAdmin = require("../middlewares/isAdmin");
@@ -29,5 +30,6 @@ router.get("/questions/:topicId", getQuestions);
 router.post("/progress", checkAuth, createProgress);
 router.post("/note", checkAuth, createNote);
 router.post("/revisited", checkAuth, toggleRevisited);
+router.post("/bookmark", checkAuth, toggleBookmark);
 
 exports.dataRoutes = router;

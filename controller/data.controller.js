@@ -1,3 +1,4 @@
+const BookmarkModel = require("../models/Bookmark.model");
 const HttpError = require("../models/HttpError");
 const NotesModel = require("../models/Notes.model");
 const ProgressModel = require("../models/Progress.model");
@@ -65,6 +66,11 @@ exports.getSheets = async (req, res, next) => {
     const notes = await NotesModel.find({
       userId: userid,
     });
+
+    const bookmarks = await BookmarkModel.find({
+      userId: userid,
+    });
+
     // console.log(userid, progress, notes);
     let sheetsWithProgress = [];
     sheetsWithProgress = sheetsWithData.map((sheet) => {
@@ -87,12 +93,17 @@ exports.getSheets = async (req, res, next) => {
             progress?.find((p) => {
               return p.questionId.toString() === question._id.toString();
             })?.revisited || false;
+          question.bookmarked =
+            !!bookmarks?.find((b) => {
+              return b.questionId.toString() === question._id.toString();
+            }) || false;
           return {
             ...question._doc,
             isCompleted: question?.isCompleted,
             notes: question?.notes,
             completedAt: question?.completedAt,
             revisited: question?.revisited,
+            bookmarked: question?.bookmarked,
           };
         }),
       };
@@ -281,6 +292,43 @@ exports.createProgress = async (req, res, next) => {
     await progress.save();
     res.status(201).json({
       message: "Progress created successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
+exports.toggleBookmark = async (req, res, next) => {
+  const { questionId, topicId, userId, sheetId } = req.body;
+  console.log(req.body);
+  try {
+    const exists = await BookmarkModel.findOne({
+      questionId,
+      topicId,
+      userId,
+      sheetId,
+    });
+    if (exists) {
+      await BookmarkModel.deleteOne({
+        questionId,
+        topicId,
+        userId,
+        sheetId,
+      });
+      return res.status(200).json({
+        message: "Bookmark deleted successfully",
+      });
+    }
+
+    const bookmark = new BookmarkModel({
+      questionId,
+      topicId,
+      userId,
+      sheetId,
+    });
+    await bookmark.save();
+    res.status(200).json({
+      message: "Bookmark toggled successfully",
     });
   } catch (err) {
     console.log(err);
