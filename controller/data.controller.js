@@ -405,7 +405,32 @@ exports.deleteTopic = async (req, res, next) => {
     return next(new HttpError("Something went wrong", 500));
   }
 };
-
+exports.addMultipleQuestionsWithTopics = async (req, res, next) => {
+  const { topics, sheet_id } = req.body;
+  try {
+    for (let topic of topics) {
+      const newTopic = new Topic({
+        title: topic.title,
+        sheetId: sheet_id,
+      });
+      await newTopic.save();
+      for (let question of topic.questions) {
+        const newQuestion = new QuestionModel({
+          title: question.title,
+          links: question.links,
+          topicId: [newTopic._id],
+        });
+        await newQuestion.save();
+      }
+    }
+    res.status(200).json({
+      message: "Questions added successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
 // {
 //   questionId: '64773a3209a33cf1a3ea6f55',
 //   userId: '647d93bd2ff12941fa1ef7e8',
