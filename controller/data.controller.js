@@ -6,6 +6,7 @@ const QuestionModel = require("../models/Question.model");
 const Sheet = require("../models/Sheet.model");
 const TopicModel = require("../models/Topic.model");
 const Topic = require("../models/Topic.model");
+const UserModel = require("../models/User.model");
 var ObjectId = require("mongoose").Types.ObjectId;
 exports.createSheet = async (req, res, next) => {
   const { title, description } = req.body;
@@ -85,6 +86,7 @@ exports.getTopics = async (req, res, next) => {
     userId,
   });
   try {
+    const existingUser = await UserModel.findOne({ _id: userId });
     const topics = await Topic.find({
       sheetId: sheetId,
     });
