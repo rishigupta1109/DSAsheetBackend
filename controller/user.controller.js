@@ -4,6 +4,11 @@ const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const ProgressModel = require("../models/Progress.model.js");
+const SheetModel = require("../models/Sheet.model");
+const TopicModel = require("../models/Topic.model");
+const BookmarkModel = require("../models/Bookmark.model");
+const NotesModel = require("../models/Notes.model");
+const QuestionModel = require("../models/Question.model");
 
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
@@ -92,6 +97,86 @@ exports.validateSession = async (req, res, next) => {
   let existingUser;
   try {
     existingUser = await User.findOne({ _id: userId });
+
+    let userid = userId;
+    // console.log(req.query);
+    let sheets = await SheetModel.find();
+    sheets = sheets?.map((sheet) => {
+      return {
+        _id: sheet._id,
+        title: sheet.title,
+        description: sheet.description,
+      };
+    });
+    const sheetsWithData = [];
+    for (let sheet of sheets) {
+      const topics = await TopicModel.find({
+        sheetId: sheet?._id,
+      });
+      sheet.topics = topics;
+      sheet.questions = [];
+      for (let topic of topics) {
+        const questions = await QuestionModel.find({
+          topicId: { $in: topic._id },
+        });
+        sheet.questions = [...sheet.questions, ...questions];
+      }
+      sheetsWithData?.push(sheet);
+    }
+    // console.log(sheetsWithData);
+    // console.log(userid);
+
+    const progress = await ProgressModel.find({
+      userId: userid,
+    });
+
+    const notes = await NotesModel.find({
+      userId: userid,
+    });
+
+    const bookmarks = await BookmarkModel.find({
+      userId: userid,
+    });
+
+    // console.log(userid, progress, notes);
+    let sheetsWithProgress = [];
+    sheetsWithProgress = sheetsWithData.map((sheet) => {
+      return {
+        ...sheet,
+        questions: sheet?.questions?.map((question) => {
+          question.isCompleted =
+            !!progress?.find((p) => {
+              return p.questionId.toString() === question._id.toString();
+            }) || false;
+          question.notes =
+            notes?.find((n) => {
+              return n.questionId.toString() === question._id.toString();
+            })?.content || "";
+          question.completedAt =
+            progress?.find((p) => {
+              return p.questionId.toString() === question._id.toString();
+            })?.completedAt || "";
+          question.revisited =
+            progress?.find((p) => {
+              return p.questionId.toString() === question._id.toString();
+            })?.revisited || false;
+          question.bookmarked =
+            !!bookmarks?.find((b) => {
+              return b.questionId.toString() === question._id.toString();
+            }) || false;
+          return {
+            ...question._doc,
+            isCompleted: question?.isCompleted,
+            notes: question?.notes,
+            completedAt: question?.completedAt,
+            revisited: question?.revisited,
+            bookmarked: question?.bookmarked,
+          };
+        }),
+      };
+    });
+    // console.log(sheetsWithProgress[0].questions);
+
     res.status(200).json({
       userId: existingUser._id,
       email: existingUser.email,
@@ -101,8 +186,10 @@ exports.validateSession = async (req, res, next) => {
       isAdmin: existingUser.isAdmin,
       dailyGoal: existingUser.dailyGoal,
       revisitDays: existingUser.revisitDays,
+      sheets: sheetsWithProgress,
     });
   } catch (err) {
+    console.log(err);
     return next(new HttpError("Something went wrong", 500));
   }
 };
