@@ -4,6 +4,7 @@ const NotesModel = require("../models/Notes.model");
 const ProgressModel = require("../models/Progress.model");
 const QuestionModel = require("../models/Question.model");
 const Sheet = require("../models/Sheet.model");
+const TopicModel = require("../models/Topic.model");
 const Topic = require("../models/Topic.model");
 var ObjectId = require("mongoose").Types.ObjectId;
 exports.createSheet = async (req, res, next) => {
@@ -27,7 +28,6 @@ exports.createSheet = async (req, res, next) => {
 };
 exports.getSheets = async (req, res, next) => {
   try {
-    let userid = req?.query?.userId;
     // console.log(req.query);
     let sheets = await Sheet.find();
     sheets = sheets?.map((sheet) => {
@@ -39,85 +39,28 @@ exports.getSheets = async (req, res, next) => {
     });
     const sheetsWithData = [];
     for (let sheet of sheets) {
-      const topics = await Topic.find({
+      const topics = await TopicModel.find({
         sheetId: sheet?._id,
       });
       sheet.topics = topics;
-      sheet.questions = [];
+      sheet.questions = 0;
       for (let topic of topics) {
         const questions = await QuestionModel.find({
           topicId: { $in: topic._id },
         });
-        sheet.questions = [...sheet.questions, ...questions];
+        sheet.questions += questions.length;
       }
       sheetsWithData?.push(sheet);
     }
-    // console.log(sheetsWithData);
-    // console.log(userid);
-    if (!userid) {
-      return res.status(200).json({
-        sheets: sheetsWithData,
-      });
-    }
-    const progress = await ProgressModel.find({
-      userId: userid,
-    });
-
-    const notes = await NotesModel.find({
-      userId: userid,
-    });
-
-    const bookmarks = await BookmarkModel.find({
-      userId: userid,
-    });
-
-    // console.log(userid, progress, notes);
-    let sheetsWithProgress = [];
-    sheetsWithProgress = sheetsWithData.map((sheet) => {
-      return {
-        ...sheet,
-        questions: sheet?.questions?.map((question) => {
-          question.isCompleted =
-            !!progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            }) || false;
-          question.notes =
-            notes?.find((n) => {
-              return n.questionId.toString() === question._id.toString();
-            })?.content || "";
-          question.completedAt =
-            progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            })?.completedAt || "";
-          question.revisited =
-            progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            })?.revisited || false;
-          question.bookmarked =
-            !!bookmarks?.find((b) => {
-              return b.questionId.toString() === question._id.toString();
-            }) || false;
-          return {
-            ...question._doc,
-            isCompleted: question?.isCompleted,
-            notes: question?.notes,
-            completedAt: question?.completedAt,
-            revisited: question?.revisited,
-            bookmarked: question?.bookmarked,
-          };
-        }),
-      };
-    });
-    // console.log(sheetsWithProgress[0].questions);
-
     return res.status(200).json({
-      sheets: sheetsWithProgress,
+      sheets: sheetsWithData,
     });
   } catch (err) {
     console.log(err);
     return next(new HttpError("Something went wrong", 500));
   }
 };
+
 exports.createTopic = async (req, res, next) => {
   const { name, sheetId } = req.body;
   const topic = new Topic({
@@ -136,12 +79,47 @@ exports.createTopic = async (req, res, next) => {
 };
 exports.getTopics = async (req, res, next) => {
   const sheetId = req.params.sheetId;
+  const userId = req?.userData?.userId;
+  console.log({
+    sheetId,
+    userId,
+  });
   try {
     const topics = await Topic.find({
       sheetId: sheetId,
     });
+    const progress = await ProgressModel.find({
+      userId: userId,
+      sheetId: sheetId,
+    });
+    console.log(progress);
+    const topicswithProgress = [];
+    for (let topic of topics) {
+      const questions = await QuestionModel.find({
+        topicId: { $in: topic._id },
+      });
+      topic.questions = questions?.length;
+      const topicProgress = progress.filter((p) => {
+        console.log(p.topicId.toString(), topic._id.toString());
+        return p.topicId.toString() === topic._id.toString();
+      });
+
+      topic.completedQuestions = topicProgress.length;
+      const toRevisit = topicProgress.filter((p) => {
+        return p.revisited === false;
+      });
+      topic.toRevisit = toRevisit.length;
+
+      topicswithProgress.push({
+        ...topic._doc,
+        questions: topic?.questions,
+        completedQuestions: topic?.completedQuestions,
+        toRevisit: topic?.toRevisit,
+      });
+    }
+    console.log(topicswithProgress);
     res.status(200).json({
-      topics: topics,
+      topics: topicswithProgress,
     });
   } catch (err) {
     console.log(err);
@@ -181,7 +159,7 @@ exports.createMultipleQuestions = async (req, res, next) => {
 
 exports.getQuestions = async (req, res, next) => {
   const topicId = req?.params?.topicId;
-  const userId = req?.params?.userId;
+  const userId = req?.userData?.userId;
   try {
     const questions = await QuestionModel.find({
       topicId: topicId,
@@ -199,6 +177,10 @@ exports.getQuestions = async (req, res, next) => {
       userId: userId,
       topicId: topicId,
     });
+    const bookmarks = await BookmarkModel.find({
+      userId: userId,
+      topicId: topicId,
+    });
     const questionsWithProgress = questions.map((question) => {
       const completed = completedQuestions.find((completedQuestion) => {
         return (
@@ -209,19 +191,18 @@ exports.getQuestions = async (req, res, next) => {
         return note.questionId.toString() === question._id.toString();
       });
 
-      if (completed) {
-        return {
-          ...question._doc,
-          completed: true,
-          notes: notes ? notes.notes : "",
-        };
-      } else {
-        return {
-          ...question._doc,
-          completed: false,
-          notes: notes ? notes.notes : "",
-        };
-      }
+      const bookmarked = bookmarks.find((bookmark) => {
+        return bookmark.questionId.toString() === question._id.toString();
+      });
+
+      return {
+        ...question._doc,
+        isCompleted: !!completed,
+        notes: notes?.content,
+        completedAt: completed?.completedAt,
+        revisited: completed?.revisited || false,
+        bookmarked: !!bookmarked,
+      };
     });
 
     res.status(200).json({

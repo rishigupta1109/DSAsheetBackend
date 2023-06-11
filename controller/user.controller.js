@@ -114,12 +114,12 @@ exports.validateSession = async (req, res, next) => {
         sheetId: sheet?._id,
       });
       sheet.topics = topics;
-      sheet.questions = [];
+      sheet.questions = 0;
       for (let topic of topics) {
         const questions = await QuestionModel.find({
           topicId: { $in: topic._id },
         });
-        sheet.questions = [...sheet.questions, ...questions];
+        sheet.questions += questions.length;
       }
       sheetsWithData?.push(sheet);
     }
@@ -129,53 +129,49 @@ exports.validateSession = async (req, res, next) => {
     const progress = await ProgressModel.find({
       userId: userid,
     });
-
-    const notes = await NotesModel.find({
-      userId: userid,
-    });
-
-    const bookmarks = await BookmarkModel.find({
-      userId: userid,
-    });
-
+    // console.log(progress);
     // console.log(userid, progress, notes);
     let sheetsWithProgress = [];
-    sheetsWithProgress = sheetsWithData.map((sheet) => {
-      return {
-        ...sheet,
-        questions: sheet?.questions?.map((question) => {
-          question.isCompleted =
-            !!progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            }) || false;
-          question.notes =
-            notes?.find((n) => {
-              return n.questionId.toString() === question._id.toString();
-            })?.content || "";
-          question.completedAt =
-            progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            })?.completedAt || "";
-          question.revisited =
-            progress?.find((p) => {
-              return p.questionId.toString() === question._id.toString();
-            })?.revisited || false;
-          question.bookmarked =
-            !!bookmarks?.find((b) => {
-              return b.questionId.toString() === question._id.toString();
-            }) || false;
-          return {
-            ...question._doc,
-            isCompleted: question?.isCompleted,
-            notes: question?.notes,
-            completedAt: question?.completedAt,
-            revisited: question?.revisited,
-            bookmarked: question?.bookmarked,
-          };
-        }),
-      };
-    });
+    for (let sheet of sheetsWithData) {
+      let progressData = progress.filter(
+        (p) => p?.sheetId == sheet?._id.toString()
+      );
+      // console.log(progressData, sheet?._id, progress[0]?._id);
+      if (progressData?.length > 0) {
+        sheet.completed = progressData?.length;
+        const completedToday = progressData.filter((p) => {
+          const today = new Date();
+          const date = new Date(p.completedAt);
+          return (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+          );
+        });
+        sheet.completedToday = completedToday.map((q) => ({
+          questionId: q.questionId,
+        }));
+        const toRevisit = progressData.filter((p) => {
+          if (p?.revisited) return false;
+          const today = new Date();
+          const date = new Date(p.completedAt);
+          return (
+            today.getTime() - date.getTime() >=
+            existingUser.revisitDays * 24 * 60 * 60 * 1000
+          );
+        });
+        sheet.toRevisit = toRevisit.map((q) => ({
+          questionId: q.questionId,
+        }));
+      } else {
+        sheet.completed = 0;
+        sheet.completedToday = [];
+        sheet.toRevisit = [];
+      }
+      sheetsWithProgress.push(sheet);
+    }
     // console.log(sheetsWithProgress[0].questions);
+    // console.log({ sheetsWithProgress });
 
     res.status(200).json({
       userId: existingUser._id,
