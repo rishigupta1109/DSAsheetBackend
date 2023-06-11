@@ -415,6 +415,7 @@ exports.addMultipleQuestionsWithTopics = async (req, res, next) => {
       });
       await newTopic.save();
       for (let question of topic.questions) {
+        if (!question.title) continue;
         const newQuestion = new QuestionModel({
           title: question.title,
           links: question.links,
