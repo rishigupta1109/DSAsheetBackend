@@ -113,7 +113,6 @@ exports.validateSession = async (req, res, next) => {
       const topics = await TopicModel.find({
         sheetId: sheet?._id,
       });
-      sheet.topics = topics;
       sheet.questions = 0;
       for (let topic of topics) {
         const questions = await QuestionModel.find({
