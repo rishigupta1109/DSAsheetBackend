@@ -410,7 +410,7 @@ exports.addMultipleQuestionsWithTopics = async (req, res, next) => {
   try {
     for (let topic of topics) {
       const newTopic = new Topic({
-        title: topic.title,
+        name: topic.name,
         sheetId: sheet_id,
       });
       await newTopic.save();
