@@ -106,7 +106,13 @@ exports.getTopics = async (req, res, next) => {
 
       topic.completedQuestions = topicProgress.length;
       const toRevisit = topicProgress.filter((p) => {
-        return p.revisited === false;
+        if (p?.revisited) return false;
+        const today = new Date();
+        const date = new Date(p.completedAt);
+        return (
+          today.getTime() - date.getTime() >=
+          existingUser.revisitDays * 24 * 60 * 60 * 1000
+        );
       });
       topic.toRevisit = toRevisit.length;
 
