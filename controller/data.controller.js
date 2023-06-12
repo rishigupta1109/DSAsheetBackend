@@ -86,7 +86,7 @@ exports.getTopics = async (req, res, next) => {
   //   userId,
   // });
   try {
-    // const existingUser = await UserModel.findOne({ _id: userId });
+    const existingUser = await UserModel.findOne({ _id: userId });
     const topics = await Topic.find({
       sheetId: sheetId,
     });
@@ -108,12 +108,13 @@ exports.getTopics = async (req, res, next) => {
 
       topic.completedQuestions = topicProgress.length;
       const toRevisit = topicProgress.filter((p) => {
-        if (p?.revisited) return false;
+        if (p.revisited === true) return false;
         const today = new Date();
         const date = new Date(p.completedAt);
+
         return (
           today.getTime() - date.getTime() >=
-          req.userData.revisitDays * 24 * 60 * 60 * 1000
+          existingUser.revisitDays * 24 * 60 * 60 * 1000
         );
       });
       topic.toRevisit = toRevisit.length;
