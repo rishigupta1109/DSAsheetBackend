@@ -124,9 +124,9 @@ exports.validateSession = async (req, res, next) => {
     //   ],
     //   allTopics
     // );
-    const allQuestions = await QuestionModel.find({
-      topicId: { $in: allTopics.map((topic) => topic._id) },
-    });
+    // const allQuestions = await QuestionModel.find({
+    //   topicId: { $in: allTopics.map((topic) => topic._id) },
+    // });
     for (let sheet of sheets) {
       let topics = [...allTopics];
       topics = topics.filter((topic) => {
@@ -137,15 +137,7 @@ exports.validateSession = async (req, res, next) => {
       sheet.topics = topics;
       sheet.questions = 0;
       for (let topic of topics) {
-        const questions = allQuestions.filter((question) =>
-          question.topicId.includes(topic._id)
-        );
-        topic.questions = questions.length;
-        const top = await TopicModel.findOneAndUpdate(
-          { _id: topic._id },
-          { $set: { questions: questions.length } }
-        );
-        sheet.questions += questions.length;
+        sheet.questions += topic.questions;
       }
       sheetsWithData?.push(sheet);
     }
