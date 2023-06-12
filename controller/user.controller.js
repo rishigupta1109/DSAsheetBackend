@@ -109,16 +109,37 @@ exports.validateSession = async (req, res, next) => {
       };
     });
     const sheetsWithData = [];
+    const allTopics = await TopicModel.find({
+      $or: [
+        ...sheets.map((sheet) => {
+          return { sheetId: sheet._id };
+        }),
+      ],
+    });
+    // console.log(
+    //   [
+    //     ...sheets.map((sheet) => {
+    //       return { sheetId: sheet._id };
+    //     }),
+    //   ],
+    //   allTopics
+    // );
     for (let sheet of sheets) {
-      const topics = await TopicModel.find({
-        sheetId: sheet?._id,
+      let topics = [...allTopics];
+      topics = topics.filter((topic) => {
+        // console.log(topic.sheetId, sheet._id);
+        return topic.sheetId.toString() == sheet._id.toString();
       });
+      // console.log({ topics });
       sheet.topics = topics;
       sheet.questions = 0;
+      const allQuestions = await QuestionModel.find({
+        topicId: { $in: topics.map((topic) => topic._id) },
+      });
       for (let topic of topics) {
-        const questions = await QuestionModel.find({
-          topicId: { $in: topic._id },
-        });
+        const questions = allQuestions.filter((question) =>
+          question.topicId.includes(topic._id)
+        );
         sheet.questions += questions.length;
       }
       sheetsWithData?.push(sheet);
