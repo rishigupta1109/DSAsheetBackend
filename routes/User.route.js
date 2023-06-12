@@ -31,5 +31,7 @@ router.post("/find-friends", checkAuth, userController.findUser);
 router.post("/toggle-friend", checkAuth, userController.toggleFriend);
 router.post("/leaderboard", checkAuth, userController.getLeaderBoardData);
 router.patch("/update", checkAuth, userController.updateUser);
+router.post("/reset", userController.generateOtp);
+router.post("/otpverify", userController.checkOtp);
 
 exports.userRoutes = router;
