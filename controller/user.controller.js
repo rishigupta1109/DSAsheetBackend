@@ -124,6 +124,9 @@ exports.validateSession = async (req, res, next) => {
     //   ],
     //   allTopics
     // );
+    const allQuestions = await QuestionModel.find({
+      topicId: { $in: allTopics.map((topic) => topic._id) },
+    });
     for (let sheet of sheets) {
       let topics = [...allTopics];
       topics = topics.filter((topic) => {
@@ -133,9 +136,6 @@ exports.validateSession = async (req, res, next) => {
       // console.log({ topics });
       sheet.topics = topics;
       sheet.questions = 0;
-      const allQuestions = await QuestionModel.find({
-        topicId: { $in: topics.map((topic) => topic._id) },
-      });
       for (let topic of topics) {
         const questions = allQuestions.filter((question) =>
           question.topicId.includes(topic._id)
