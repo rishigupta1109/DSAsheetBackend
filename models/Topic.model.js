@@ -8,5 +8,9 @@ const Topic = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Sheet",
   },
+  questions: {
+    type: Number,
+    default: 0,
+  },
 });
 module.exports = mongoose.model("Topic", Topic);

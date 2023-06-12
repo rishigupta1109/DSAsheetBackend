@@ -140,6 +140,11 @@ exports.validateSession = async (req, res, next) => {
         const questions = allQuestions.filter((question) =>
           question.topicId.includes(topic._id)
         );
+        topic.questions = questions.length;
+        const top = await TopicModel.findOneAndUpdate(
+          { _id: topic._id },
+          { $set: { questions: questions.length } }
+        );
         sheet.questions += questions.length;
       }
       sheetsWithData?.push(sheet);

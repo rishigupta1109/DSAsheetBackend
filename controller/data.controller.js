@@ -143,6 +143,11 @@ exports.createQuestion = async (req, res, next) => {
   });
   try {
     await question.save();
+    const topic = await TopicModel.findOne({
+      _id: topicId,
+    });
+    topic.questions = topic.questions + 1;
+    await topic.save();
     res.status(201).json({
       message: "Question created successfully",
     });
@@ -155,6 +160,11 @@ exports.createMultipleQuestions = async (req, res, next) => {
   try {
     // console.log(questions);
     const createdQuestions = await QuestionModel.insertMany(questions);
+    const topic = await TopicModel.findOne({
+      _id: questions[0].topicId,
+    });
+    topic.questions = topic.questions + questions.length;
+    await topic.save();
     res.status(201).json({
       createdQuestions: createdQuestions,
       message: "Questions created successfully",
@@ -412,6 +422,7 @@ exports.addMultipleQuestionsWithTopics = async (req, res, next) => {
       const newTopic = new Topic({
         name: topic.name,
         sheetId: sheet_id,
+        questions: topic.questions,
       });
       await newTopic.save();
       for (let question of topic.questions) {
