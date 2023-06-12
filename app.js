@@ -2,10 +2,11 @@ const HttpError = require("./models/HttpError");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const { logExecutionTime } = require("mongoose-execution-time");
 const bodyParser = require("body-parser");
 var cors = require("cors");
 app.use(bodyParser.json());
-
+mongoose.plugin(logExecutionTime);
 app.use(cors());
 
 //routes
