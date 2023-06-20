@@ -36,5 +36,9 @@ const User = mongoose.Schema({
     type: Number,
     default: 5,
   },
+  college: {
+    type: String,
+    default: "",
+  },
 });
 module.exports = mongoose.model("User", User);

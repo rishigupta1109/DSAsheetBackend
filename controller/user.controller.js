@@ -11,6 +11,7 @@ const NotesModel = require("../models/Notes.model");
 const QuestionModel = require("../models/Question.model");
 const nodemailer = require("nodemailer");
 const OtpModel = require("../models/Otp.model");
+const UserModel = require("../models/User.model");
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
   console.log(req.body);
@@ -201,6 +202,7 @@ exports.validateSession = async (req, res, next) => {
       isAdmin: existingUser.isAdmin,
       dailyGoal: existingUser.dailyGoal,
       revisitDays: existingUser.revisitDays,
+      college: existingUser.college,
       sheets: sheetsWithProgress,
     });
   } catch (err) {
@@ -249,7 +251,7 @@ exports.toggleFriend = async (req, res, next) => {
 };
 
 exports.getLeaderBoardData = async (req, res, next) => {
-  const { userId, sheetId, duration } = req.body;
+  const { userId, sheetId, duration, withs } = req.body;
   try {
     let dayToCompare;
     if (duration === 1) {
@@ -287,7 +289,18 @@ exports.getLeaderBoardData = async (req, res, next) => {
       if (!user) {
         return next(new HttpError("User not found", 404));
       }
-      const friends = user?.friends;
+      let friends = user?.friends;
+      if (withs === "ALL") {
+        friends = await User.find();
+        friends = friends
+          .map((f) => f._id.toString())
+          .filter((f) => f !== userId);
+      } else if (withs != "Friends") {
+        friends = await User.find({ college: withs });
+        friends = friends
+          .map((f) => f._id.toString())
+          .filter((f) => f !== userId);
+      }
       const leaderboard = [];
       leaderboard.push({
         name: user?.name,
@@ -331,6 +344,17 @@ exports.getLeaderBoardData = async (req, res, next) => {
       return next(new HttpError("User not found", 404));
     }
     const friends = user?.friends;
+    if (withs === "ALL") {
+      friends = await User.find();
+      friends = friends
+        .map((f) => f._id.toString())
+        .filter((f) => f !== userId);
+    } else if (withs != "Friends") {
+      friends = await User.find({ college: withs });
+      friends = friends
+        .map((f) => f._id.toString())
+        .filter((f) => f !== userId);
+    }
     const leaderboard = [];
     leaderboard.push({
       name: user?.name,
@@ -366,7 +390,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
 };
 
 exports.updateUser = async (req, res, next) => {
-  const { userId, name, dailyGoal, revisitDays } = req.body;
+  const { userId, name, dailyGoal, revisitDays, college } = req.body;
   console.log(req.body);
   try {
     const user = await User.findOneAndUpdate(
@@ -375,6 +399,7 @@ exports.updateUser = async (req, res, next) => {
         name: name,
         dailyGoal: parseInt(dailyGoal) || 0,
         revisitDays: parseInt(revisitDays) || 0,
+        college,
       }
     );
     res.status(200).json({
@@ -510,3 +535,89 @@ const checkOtp = async (req, res, next) => {
 };
 exports.generateOtp = generateOtp;
 exports.checkOtp = checkOtp;
+
+exports.generateOtpforRegister = async (req, res, next) => {
+  const { email, username: userName } = req.body;
+  if (!email || !userName) {
+    return next(new HttpError("All fields are required", 404));
+  }
+  let user;
+  try {
+    user = await UserModel.findOne({
+      $or: [
+        { email: email },
+        {
+          username: userName,
+        },
+      ],
+    });
+    if (user) {
+      return next(new HttpError("User already exists", 404));
+    }
+    let code = await OtpModel.findOne({ email: email });
+    let otp = Math.floor(Math.random() * (9999 - 1000) + 1000);
+    if (code) {
+      code.expiresIn = new Date().getTime() + 300 * 1000;
+      code.code = otp;
+      try {
+        await code.save();
+      } catch (err) {
+        console.log(err);
+        return next(new HttpError("something went wrong", 404));
+      }
+    } else {
+      code = new OtpModel({
+        email: email,
+        code: otp,
+        expiresIn: new Date().getTime() + 300 * 1000,
+      });
+      try {
+        await code.save();
+      } catch (err) {
+        console.log(err);
+        return next(new HttpError("something went wrong", 404));
+      }
+    }
+    mail(email, otp);
+    res.json({ message: "otp sent to your email", status: "success" });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("something went wrong", 404));
+  }
+};
+exports.checkOtpforRegister = async (req, res, next) => {
+  const { email, otp } = req.body;
+  console.log(req.body);
+  if (!email || !otp) {
+    return next(new HttpError("All fields are required", 404));
+  }
+  let userOtp;
+  try {
+    userOtp = await OtpModel.findOne({ email: email, code: otp });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("something went wrong", 404));
+  }
+  if (userOtp) {
+    let expiry = new Date(userOtp.expiresIn);
+    if (expiry > new Date()) {
+      res.status(200).json({ message: "correct otp", status: 200 });
+    } else {
+      return next(new HttpError("Otp expired", 404));
+    }
+  } else {
+    return next(new HttpError("wrong otp", 404));
+  }
+};
+exports.getUniqueColleges = async (req, res, next) => {
+  try {
+    let colleges = await User.find().select("college");
+    colleges = colleges.map((college) => college.college);
+    colleges = colleges.filter((college) => !!college);
+    console.log(new Set(colleges));
+    res.json({ colleges: Array.from(new Set(colleges)) });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("something went wrong", 404));
+  }
+};

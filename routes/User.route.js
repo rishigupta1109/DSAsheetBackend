@@ -13,6 +13,8 @@ router.post(
   ],
   userController.signup
 );
+router.post("/otp", userController.generateOtpforRegister);
+router.post("/otpverify", userController.checkOtpforRegister);
 router.post(
   "/login",
   [
@@ -33,5 +35,5 @@ router.post("/leaderboard", checkAuth, userController.getLeaderBoardData);
 router.patch("/update", checkAuth, userController.updateUser);
 router.post("/reset", userController.generateOtp);
 router.post("/otpverify", userController.checkOtp);
-
+router.get("/colleges", userController.getUniqueColleges);
 exports.userRoutes = router;
