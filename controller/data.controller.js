@@ -232,6 +232,28 @@ exports.getQuestions = async (req, res, next) => {
     return next(new HttpError("Something went wrong", 500));
   }
 };
+exports.deleteQuestion = async (req, res, next) => {
+  const { questionId, topicId } = req.params;
+  try {
+    const question = await QuestionModel.findOne({ _id: questionId });
+    if (!question) {
+      return next(new HttpError("Question not found", 404));
+    }
+    await QuestionModel.findOneAndDelete({ _id: questionId });
+    await TopicModel.findOneAndUpdate(
+      { _id: topicId },
+      { $inc: { questions: -1 } }
+    );
+    await NotesModel.deleteMany({ questionId: questionId });
+    await BookmarkModel.deleteMany({ questionId: questionId });
+    res.status(200).json({
+      message: "Question deleted successfully",
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Something went wrong", 500));
+  }
+};
 exports.createNote = async (req, res, next) => {
   const { questionId, content, topicId, userId } = req.body;
   try {

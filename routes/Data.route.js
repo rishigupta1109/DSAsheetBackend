@@ -13,6 +13,7 @@ const {
   toggleRevisited,
   toggleBookmark,
   addMultipleQuestionsWithTopics,
+  deleteQuestion,
 } = require("../controller/data.controller");
 const checkAuth = require("../middlewares/check-auth");
 const isAdmin = require("../middlewares/isAdmin");
@@ -26,6 +27,12 @@ router.post("/topics", checkAuth, isAdmin, createTopic);
 router.delete("/topics/:topicId", checkAuth, isAdmin, deleteTopic);
 router.get("/topics/:sheetId", checkAuth, getTopics);
 router.post("/questions", checkAuth, isAdmin, createQuestion);
+router.delete(
+  "/questions/:topicId/:questionId",
+  checkAuth,
+  isAdmin,
+  deleteQuestion
+);
 router.post("/multiple-questions", checkAuth, isAdmin, createMultipleQuestions);
 router.get("/questions/:topicId", checkAuth, getQuestions);
 router.post("/progress", checkAuth, createProgress);
