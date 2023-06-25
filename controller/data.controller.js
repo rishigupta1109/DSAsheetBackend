@@ -301,6 +301,26 @@ exports.createProgress = async (req, res, next) => {
         userId,
         sheetId,
       });
+      let user = await UserModel.findOne({ _id: userId });
+      let dailyGoal = user.dailyGoal;
+
+      const todayQues = await ProgressModel.find({
+        userId: userId,
+        completedAt: {
+          $gte: new Date().setHours(0, 0, 0, 0),
+          $lt: new Date().setHours(23, 59, 59, 999),
+        },
+      });
+
+      if (todayQues.length === dailyGoal - 1) {
+        user.currentStreak = Math.max(user.currentStreak - 1, 0);
+        user.longestStreak = Math.max(
+          user.currentStreak - 1,
+          user.longestStreak - 1
+        );
+        user.lastGoal = new Date(new Date().setDate(new Date().getDate() - 1));
+      }
+      await user.save();
       return res.status(200).json({
         message: "Progress deleted successfully",
       });
@@ -312,6 +332,33 @@ exports.createProgress = async (req, res, next) => {
       sheetId,
     });
     await progress.save();
+    let user = await UserModel.findOne({ _id: userId });
+    let dailyGoal = user.dailyGoal;
+
+    const todayQues = await ProgressModel.find({
+      userId: userId,
+      completedAt: {
+        $gte: new Date().setHours(0, 0, 0, 0),
+        $lt: new Date().setHours(23, 59, 59, 999),
+      },
+    });
+    let yesterday = new Date(new Date().setDate(new Date().getDate() - 1));
+    if (
+      todayQues.length === dailyGoal &&
+      user?.lastGoal &&
+      new Date(user.lastGoal).getDate() === yesterday.getDate() &&
+      new Date(user.lastGoal).getMonth() === yesterday.getMonth() &&
+      new Date(user.lastGoal).getFullYear() === yesterday.getFullYear()
+    ) {
+      user.currentStreak = user.currentStreak + 1;
+      user.longestStreak = Math.max(user.currentStreak, user.longestStreak);
+      user.lastGoal = new Date();
+    } else if (todayQues.length === dailyGoal) {
+      user.currentStreak = 1;
+      user.longestStreak = Math.max(user.currentStreak, user.longestStreak);
+      user.lastGoal = new Date();
+    }
+    await user.save();
     res.status(201).json({
       message: "Progress created successfully",
     });

@@ -202,6 +202,9 @@ exports.validateSession = async (req, res, next) => {
       isAdmin: existingUser.isAdmin,
       dailyGoal: existingUser.dailyGoal,
       revisitDays: existingUser.revisitDays,
+      currentStreak: existingUser?.currentStreak || 0,
+      longestStreak: existingUser?.longestStreak || 0,
+      lastGoal: existingUser?.lastGoal || null,
       college: existingUser.college,
       sheets: sheetsWithProgress,
     });
@@ -306,6 +309,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
         name: user?.name,
         username: user?.username,
         questions: userProgress?.length || 0,
+        currentStreak: user?.currentStreak || 0,
+        longestStreak: user?.longestStreak || 0,
       });
       if (friends.length === 0)
         return res.status(200).json({
@@ -323,6 +328,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
           name: friend?.name,
           username: friend?.username,
           questions: friendProgress?.length || 0,
+          currentStreak: friend?.currentStreak || 0,
+          longestStreak: friend?.longestStreak || 0,
         });
       }
       leaderboard.sort((a, b) => b.questions - a.questions);
@@ -360,6 +367,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
       name: user?.name,
       username: user?.username,
       questions: userProgress?.length || 0,
+      currentStreak: user?.currentStreak || 0,
+      longestStreak: user?.longestStreak || 0,
     });
     if (friends.length === 0)
       return res.status(200).json({
@@ -378,6 +387,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
         name: friend?.name,
         username: friend?.username,
         questions: friendProgress?.length || 0,
+        currentStreak: friend?.currentStreak || 0,
+        longestStreak: friend?.longestStreak || 0,
       });
     }
     return res.status(200).json({

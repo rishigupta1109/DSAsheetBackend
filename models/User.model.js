@@ -40,5 +40,17 @@ const User = mongoose.Schema({
     type: String,
     default: "",
   },
+  currentStreak: {
+    type: Number,
+    default: 0,
+  },
+  longestStreak: {
+    type: Number,
+    default: 0,
+  },
+  lastGoal: {
+    type: Date,
+    default: null,
+  },
 });
 module.exports = mongoose.model("User", User);
