@@ -424,8 +424,8 @@ const mail = (email, otp) => {
   const mailOptions = {
     from: "thebookbajaar@gmail.com",
     to: email,
-    subject: `Otp to reset your password`,
-    text: `The otp to reset your password is ${otp}. Thanks,Sheet Code`,
+    subject: `OTP to set password`,
+    text: `The otp to set your password is ${otp}. Thanks,Sheet Code`,
     replyTo: "thebookbajaar@gmail.com",
   };
   transporter.sendMail(mailOptions, function (err, res) {
