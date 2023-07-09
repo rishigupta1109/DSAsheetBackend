@@ -274,6 +274,11 @@ exports.getLeaderBoardData = async (req, res, next) => {
       dayToCompare = new Date(
         `${year}-${month}-${date}T00:00:00.000`
       ).toISOString();
+    } else if (duration === -1) {
+      //store oldest date in day to compare
+      dayToCompare = new Date(
+        Date.now() - 100 * 365 * 24 * 60 * 60 * 1000
+      ).toISOString();
     } else {
       dayToCompare = new Date(
         Date.now() - duration * 24 * 60 * 60 * 1000
