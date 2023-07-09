@@ -36,4 +36,5 @@ router.patch("/update", checkAuth, userController.updateUser);
 router.post("/reset", userController.generateOtp);
 router.post("/otpverify", userController.checkOtp);
 router.get("/colleges", userController.getUniqueColleges);
+router.get("/top-performers", userController.getTopPerformers);
 exports.userRoutes = router;

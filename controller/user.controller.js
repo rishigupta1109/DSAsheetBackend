@@ -637,3 +637,62 @@ exports.getUniqueColleges = async (req, res, next) => {
     return next(new HttpError("something went wrong", 404));
   }
 };
+
+exports.getTopPerformers = async (req, res, next) => {
+  try {
+    let progressThisYear = await ProgressModel.find({
+      completedAt: {
+        $gte: new Date(new Date().getFullYear(), 0, 1),
+        $lt: new Date(new Date().getFullYear(), 11, 31),
+      },
+    });
+    // console.log(progressThisYear);
+    let progressPerMonth = {};
+    progressThisYear.forEach((progress) => {
+      let month = new Date(progress.completedAt).getMonth();
+      if (progressPerMonth[month]) {
+        progressPerMonth[month].push(progress);
+      }
+      if (!progressPerMonth[month]) {
+        progressPerMonth[month] = [progress];
+      }
+    });
+    // console.log(progressPerMonth);
+    let userPerMonth = {};
+    for (let month in progressPerMonth) {
+      let users = [];
+      progressPerMonth[month].forEach((progress) => {
+        let user = users.find((user) => user._id == progress.userId.toString());
+        if (user) {
+          user.questions += 1;
+        } else {
+          users.push({ _id: progress.userId.toString(), questions: 1 });
+        }
+      });
+      userPerMonth[month] = users;
+    }
+    console.log(userPerMonth);
+    let topPerformersPerMonth = {};
+    for (let month in userPerMonth) {
+      let users = userPerMonth[month];
+      users.sort((a, b) => b.questions - a.questions);
+      topPerformersPerMonth[month] = users.slice(0, 3);
+    }
+    console.log(topPerformersPerMonth);
+    for (let month in topPerformersPerMonth) {
+      let users = topPerformersPerMonth[month];
+      for (let i = 0; i < users.length; i++) {
+        let user = await User.findById(users[i]._id);
+        users[i].username = user.username;
+        users[i].name = user.name;
+      }
+    }
+    console.log(topPerformersPerMonth);
+    res.json({
+      topPerformersPerMonth: topPerformersPerMonth,
+    });
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("something went wrong", 500));
+  }
+};
