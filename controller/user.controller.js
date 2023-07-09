@@ -355,7 +355,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
     if (!user) {
       return next(new HttpError("User not found", 404));
     }
-    const friends = user?.friends;
+    let friends = user?.friends;
     if (withs === "ALL") {
       friends = await User.find();
       friends = friends
