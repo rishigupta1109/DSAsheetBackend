@@ -34,7 +34,7 @@ router.post("/toggle-friend", checkAuth, userController.toggleFriend);
 router.post("/leaderboard", checkAuth, userController.getLeaderBoardData);
 router.patch("/update", checkAuth, userController.updateUser);
 router.post("/reset", userController.generateOtp);
-router.post("/otpverify", userController.checkOtp);
+router.post("/reset-otpverify", userController.checkOtp);
 router.get("/colleges", userController.getUniqueColleges);
 router.get("/top-performers", userController.getTopPerformers);
 exports.userRoutes = router;
