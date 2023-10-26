@@ -254,7 +254,15 @@ exports.toggleFriend = async (req, res, next) => {
 };
 
 exports.getLeaderBoardData = async (req, res, next) => {
-  const { userId, sheetId, duration, withs } = req.body;
+  let { userId, sheetId, duration, withs, pageNumber, limit } = req.body;
+  console.log(req.body);
+  if (!pageNumber || !limit) {
+    pageNumber = 0;
+    limit = 10;
+  }
+  let startIdx = pageNumber * limit;
+  let endIdx = pageNumber * limit + limit;
+  let totalDocs = 0;
   try {
     let dayToCompare;
     if (duration === 1) {
@@ -298,13 +306,23 @@ exports.getLeaderBoardData = async (req, res, next) => {
         return next(new HttpError("User not found", 404));
       }
       let friends = user?.friends;
+      totalDocs = friends?.length + 1;
+      friends = friends?.slice(startIdx, limit);
+
       if (withs === "ALL") {
-        friends = await User.find();
+        friends = await User.find()?.skip(startIdx)?.limit(limit);
+        totalDocs = await User.countDocuments();
         friends = friends
           .map((f) => f._id.toString())
           .filter((f) => f !== userId);
       } else if (withs != "Friends") {
-        friends = await User.find({ college: withs });
+        friends = await User.find({ college: withs })
+          ?.skip(startIdx)
+          ?.limit(limit);
+        totalDocs = await User.countDocuments({ college: withs });
+        if (!friends.find((f) => f._id.toString() === userId)) {
+          totalDocs++;
+        }
         friends = friends
           .map((f) => f._id.toString())
           .filter((f) => f !== userId);
@@ -320,6 +338,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
       if (friends.length === 0)
         return res.status(200).json({
           leaderboard: leaderboard,
+          totalDocs: totalDocs,
+          pageNumber,
         });
       for (let i = 0; i < friends.length; i++) {
         const friend = await User.findOne({ _id: friends[i] });
@@ -340,6 +360,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
       leaderboard.sort((a, b) => b.questions - a.questions);
       return res.status(200).json({
         leaderboard: leaderboard,
+        totalDocs: totalDocs,
+        pageNumber,
       });
     }
 
@@ -356,13 +378,22 @@ exports.getLeaderBoardData = async (req, res, next) => {
       return next(new HttpError("User not found", 404));
     }
     let friends = user?.friends;
+    totalDocs = friends?.length + 1;
+    friends = friends?.slice(startIdx, limit);
     if (withs === "ALL") {
-      friends = await User.find();
+      friends = await User.find()?.skip(startIdx)?.limit(limit);
+      totalDocs = await User.countDocuments();
       friends = friends
         .map((f) => f._id.toString())
         .filter((f) => f !== userId);
     } else if (withs != "Friends") {
-      friends = await User.find({ college: withs });
+      friends = await User.find({ college: withs })
+        ?.skip(startIdx)
+        ?.limit(limit);
+      totalDocs = await User.countDocuments({ college: withs });
+      if (!friends.find((f) => f._id.toString() === userId)) {
+        totalDocs++;
+      }
       friends = friends
         .map((f) => f._id.toString())
         .filter((f) => f !== userId);
@@ -378,6 +409,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
     if (friends.length === 0)
       return res.status(200).json({
         leaderboard: leaderboard,
+        totalDocs: totalDocs,
+        pageNumber,
       });
     for (let i = 0; i < friends.length; i++) {
       const friend = await User.findOne({ _id: friends[i] });
@@ -398,6 +431,8 @@ exports.getLeaderBoardData = async (req, res, next) => {
     }
     return res.status(200).json({
       leaderboard: leaderboard,
+      totalDocs: totalDocs,
+      pageNumber,
     });
   } catch (err) {
     console.log(err);
