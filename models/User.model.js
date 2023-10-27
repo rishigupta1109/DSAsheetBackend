@@ -52,13 +52,10 @@ const User = mongoose.Schema({
     type: Date,
     default: null,
   },
-  completedQuestions: {
-    type: Number,
-    default: 0,
-  },
-  sheets: {
-    type: Object,
-    default: {},
-  },
+  completedQuestions: [
+    {
+      type: Object,
+    },
+  ],
 });
 module.exports = mongoose.model("User", User);

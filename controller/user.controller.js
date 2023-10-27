@@ -252,7 +252,27 @@ exports.toggleFriend = async (req, res, next) => {
     return next(new HttpError("Something went wrong", 500));
   }
 };
-
+const sorterFn = (a, b, dayToCompare) => {
+  const aQuestions =
+    a?.completedQuestions?.filter(
+      (q) => new Date(q?.completedAt) >= dayToCompare
+    )?.length || 0;
+  const bQuestions =
+    b?.completedQuestions?.filter(
+      (q) => new Date(q?.completedAt) >= dayToCompare
+    )?.length || 0;
+  if (aQuestions > bQuestions) return -1;
+  else if (aQuestions < bQuestions) return 1;
+  else {
+    if (a?.currentStreak > b?.currentStreak) return -1;
+    else if (a?.currentStreak < b?.currentStreak) return 1;
+    else {
+      if (a?.longestStreak > b?.longestStreak) return -1;
+      else if (a?.longestStreak < b?.longestStreak) return 1;
+      else return 0;
+    }
+  }
+};
 exports.getLeaderBoardData = async (req, res, next) => {
   let { userId, sheetId, duration, withs, pageNumber, limit } = req.body;
   console.log(req.body);
@@ -295,13 +315,13 @@ exports.getLeaderBoardData = async (req, res, next) => {
       ).toISOString();
     }
     if (sheetId === "ALL") {
-      const userProgress = await ProgressModel.find({
-        userId: userId,
-        completedAt: {
-          $gte: dayToCompare,
-        },
-      });
-      // console.log(userProgress);
+      // const userProgress = await ProgressModel.find({
+      //   userId: userId,
+      //   completedAt: {
+      //     $gte: dayToCompare,
+      //   },
+      // });
+      // // console.log(userProgress);
 
       const user = await User.findOne({ _id: userId });
       if (!user) {
@@ -310,23 +330,60 @@ exports.getLeaderBoardData = async (req, res, next) => {
       let friends = user?.friends;
       friends = [userId, ...friends];
       totalDocs = friends?.length + 1;
-      friends = friends?.slice(startIdx, limit);
+      // friends = friends?.slice(startIdx, limit);
 
+      let leaderboard = [];
       if (withs === "ALL") {
-        friends = await User.find()?.skip(startIdx)?.limit(limit);
+        friends = await User.find();
+        friends = friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
+        friends = friends?.slice(startIdx, limit);
         totalDocs = await User.countDocuments();
-        friends = friends.map((f) => f._id.toString());
+        // friends = friends.map((f) => f._id.toString());
+
+        friends.forEach((friend) => {
+          // console.log({ friend, dayToCompare });
+          let completedQuestions = friend?.completedQuestions?.filter((q) => {
+            return new Date(q?.completedAt) >= new Date(dayToCompare);
+          })?.length;
+
+          leaderboard.push({
+            name: friend?.name,
+            username: friend?.username,
+            questions: completedQuestions || 0,
+            currentStreak: friend?.currentStreak || 0,
+            longestStreak: friend?.longestStreak || 0,
+          });
+        });
+        return res.status(200).json({
+          leaderboard: leaderboard,
+          totalDocs: totalDocs,
+          pageNumber,
+        });
       } else if (withs != "Friends") {
-        friends = await User.find({ college: withs })
-          ?.skip(startIdx)
-          ?.limit(limit);
+        friends = await User.find({ college: withs });
+        friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
+        friends = friends?.slice(startIdx, limit);
         totalDocs = await User.countDocuments({ college: withs });
-        if (!friends.find((f) => f._id.toString() === userId)) {
-          totalDocs++;
-        }
-        friends = friends.map((f) => f._id.toString());
+        // friends = friends.map((f) => f._id.toString());
+        friends.forEach((friend) => {
+          let completedQuestions = friend?.completedQuestions?.filter((q) => {
+            return new Date(q?.completedAt) >= new Date(dayToCompare);
+          })?.length;
+
+          leaderboard.push({
+            name: friend?.name,
+            username: friend?.username,
+            questions: completedQuestions || 0,
+            currentStreak: friend?.currentStreak || 0,
+            longestStreak: friend?.longestStreak || 0,
+          });
+        });
+        return res.status(200).json({
+          leaderboard: leaderboard,
+          totalDocs: totalDocs,
+          pageNumber,
+        });
       }
-      const leaderboard = [];
       // leaderboard.push({
       //   name: user?.name,
       //   username: user?.username,
@@ -340,23 +397,42 @@ exports.getLeaderBoardData = async (req, res, next) => {
           totalDocs: totalDocs,
           pageNumber,
         });
+      let friendsData = [];
       for (let i = 0; i < friends.length; i++) {
         const friend = await User.findOne({ _id: friends[i] });
-        const friendProgress = await ProgressModel.find({
-          userId: friends[i],
-          completedAt: {
-            $gte: dayToCompare,
-          },
-        });
-        leaderboard.push({
+        // const friendProgress = await ProgressModel.find({
+        //   userId: friends[i],
+        //   completedAt: {
+        //     $gte: dayToCompare,
+        //   },
+        // });
+        friendsData.push({
           name: friend?.name,
           username: friend?.username,
-          questions: friendProgress?.length || 0,
+          completedQuestions: friend?.completedQuestions || [],
           currentStreak: friend?.currentStreak || 0,
           longestStreak: friend?.longestStreak || 0,
         });
       }
-      leaderboard.sort((a, b) => b.questions - a.questions);
+      friendsData = friendsData.sort((a, b) => {
+        return sorterFn(a, b, dayToCompare);
+      });
+      friendsData = friendsData.slice(startIdx, limit);
+      friendsData.forEach((friend) => {
+        console.log(friend);
+        let completedQuestions = friend?.completedQuestions?.filter((q) => {
+          return new Date(q?.completedAt) >= new Date(dayToCompare);
+        })?.length;
+
+        leaderboard.push({
+          name: friend?.name,
+          username: friend?.username,
+          questions: completedQuestions || 0,
+          currentStreak: friend?.currentStreak || 0,
+          longestStreak: friend?.longestStreak || 0,
+        });
+      });
+
       return res.status(200).json({
         leaderboard: leaderboard,
         totalDocs: totalDocs,
@@ -364,13 +440,13 @@ exports.getLeaderBoardData = async (req, res, next) => {
       });
     }
 
-    const userProgress = await ProgressModel.find({
-      userId: userId,
-      sheetId: sheetId,
-      completedAt: {
-        $gte: dayToCompare,
-      },
-    });
+    // const userProgress = await ProgressModel.find({
+    //   userId: userId,
+    //   sheetId: sheetId,
+    //   completedAt: {
+    //     $gte: dayToCompare,
+    //   },
+    // });
     // console.log(userProgress);
     const user = await User.findOne({ _id: userId });
     if (!user) {
@@ -378,22 +454,70 @@ exports.getLeaderBoardData = async (req, res, next) => {
     }
     let friends = [userId, ...user?.friends];
     totalDocs = friends?.length + 1;
-    friends = friends?.slice(startIdx, limit);
+    // friends = friends?.slice(startIdx, limit);
+    let leaderboard = [];
     if (withs === "ALL") {
-      friends = await User.find()?.skip(startIdx)?.limit(limit);
+      friends = await User.find();
+      console.log(friends);
+      friends = friends?.map((f) => ({
+        ...f._doc,
+        completedQuestions: f._doc?.completedQuestions?.filter((q) => {
+          return q.sheetId.toString() === sheetId.toString();
+        }),
+      }));
+      console.log(friends);
+      friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
+      friends = friends?.slice(startIdx, limit);
       totalDocs = await User.countDocuments();
-      friends = friends.map((f) => f._id.toString());
+      friends.forEach((friend) => {
+        let completedQuestions = friend?.completedQuestions?.filter((q) => {
+          return new Date(q?.completedAt) >= new Date(dayToCompare);
+        })?.length;
+
+        leaderboard.push({
+          name: friend?.name,
+          username: friend?.username,
+          questions: completedQuestions || 0,
+          currentStreak: friend?.currentStreak || 0,
+          longestStreak: friend?.longestStreak || 0,
+        });
+      });
+      return res.status(200).json({
+        leaderboard: leaderboard,
+        totalDocs: totalDocs,
+        pageNumber,
+      });
     } else if (withs != "Friends") {
-      friends = await User.find({ college: withs })
-        ?.skip(startIdx)
-        ?.limit(limit);
+      friends = await User.find({ college: withs });
+      friends = friends?.map((f) => ({
+        ...f._doc,
+        completedQuestions: f._doc?.completedQuestions?.filter((q) => {
+          return q.sheetId.toString() === sheetId.toString();
+        }),
+      }));
+      friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
+      friends = friends?.slice(startIdx, limit);
       totalDocs = await User.countDocuments({ college: withs });
-      if (!friends.find((f) => f._id.toString() === userId)) {
-        totalDocs++;
-      }
-      friends = friends.map((f) => f._id.toString());
+
+      friends.forEach((friend) => {
+        let completedQuestions = friend?.completedQuestions?.filter((q) => {
+          return new Date(q?.completedAt) >= new Date(dayToCompare);
+        })?.length;
+
+        leaderboard.push({
+          name: friend?.name,
+          username: friend?.username,
+          questions: completedQuestions || 0,
+          currentStreak: friend?.currentStreak || 0,
+          longestStreak: friend?.longestStreak || 0,
+        });
+      });
+      return res.status(200).json({
+        leaderboard: leaderboard,
+        totalDocs: totalDocs,
+        pageNumber,
+      });
     }
-    const leaderboard = [];
     // leaderboard.push({
     //   name: user?.name,
     //   username: user?.username,
@@ -407,23 +531,40 @@ exports.getLeaderBoardData = async (req, res, next) => {
         totalDocs: totalDocs,
         pageNumber,
       });
+    let friendsData = [];
     for (let i = 0; i < friends.length; i++) {
       const friend = await User.findOne({ _id: friends[i] });
-      const friendProgress = await ProgressModel.find({
-        userId: friends[i],
-        sheetId: sheetId,
-        completedAt: {
-          $gte: dayToCompare,
-        },
-      });
-      leaderboard.push({
+      friendsData.push({
         name: friend?.name,
         username: friend?.username,
-        questions: friendProgress?.length || 0,
+        completedQuestions: friend?.completedQuestions || 0,
         currentStreak: friend?.currentStreak || 0,
         longestStreak: friend?.longestStreak || 0,
       });
     }
+    friendsData = friendsData?.map((f) => ({
+      ...f,
+      completedQuestions: f?.completedQuestions?.filter((q) => {
+        return q.sheetId.toString() === sheetId.toString();
+      }),
+    }));
+    friendsData = friendsData.sort((a, b) => {
+      return sorterFn(a, b, dayToCompare);
+    });
+    friendsData = friendsData.slice(startIdx, endIdx);
+    friendsData.forEach((friend) => {
+      let completedQuestions = friend?.completedQuestions?.filter((q) => {
+        return new Date(q?.completedAt) >= new Date(dayToCompare);
+      })?.length;
+
+      leaderboard.push({
+        name: friend?.name,
+        username: friend?.username,
+        questions: completedQuestions || 0,
+        currentStreak: friend?.currentStreak || 0,
+        longestStreak: friend?.longestStreak || 0,
+      });
+    });
     return res.status(200).json({
       leaderboard: leaderboard,
       totalDocs: totalDocs,
@@ -438,13 +579,16 @@ exports.updateCompletedQuestionsCount = async (req, res, next) => {
   const users = await User.find();
   for (let user of users) {
     const progress = await ProgressModel.find({ userId: user._id });
-    user.completedQuestions = progress.length;
-    user.sheets = {};
+    user.completedQuestions = [];
     progress.forEach((p) => {
-      user.sheets[p.sheetId] = user.sheets[p.sheetId]
-        ? user.sheets[p.sheetId] + 1
-        : 1;
+      user.completedQuestions.push({
+        id: p._id,
+        sheetId: p.sheetId,
+        completedAt: p.completedAt,
+        questionId: p.questionId,
+      });
     });
+
     await User.findOneAndUpdate({ _id: user._id }, user);
   }
   res.json({ message: "done" });
