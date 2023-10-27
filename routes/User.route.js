@@ -37,4 +37,8 @@ router.post("/reset", userController.generateOtp);
 router.post("/reset-otpverify", userController.checkOtp);
 router.get("/colleges", userController.getUniqueColleges);
 router.get("/top-performers", userController.getTopPerformers);
+router.get(
+  "/updateQuestionsCount",
+  userController.updateCompletedQuestionsCount
+);
 exports.userRoutes = router;

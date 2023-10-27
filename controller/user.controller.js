@@ -434,6 +434,21 @@ exports.getLeaderBoardData = async (req, res, next) => {
     return next(new HttpError("Something went wrong", 500));
   }
 };
+exports.updateCompletedQuestionsCount = async (req, res, next) => {
+  const users = await User.find();
+  for (let user of users) {
+    const progress = await ProgressModel.find({ userId: user._id });
+    user.completedQuestions = progress.length;
+    user.sheets = {};
+    progress.forEach((p) => {
+      user.sheets[p.sheetId] = user.sheets[p.sheetId]
+        ? user.sheets[p.sheetId] + 1
+        : 1;
+    });
+    await User.findOneAndUpdate({ _id: user._id }, user);
+  }
+  res.json({ message: "done" });
+};
 
 exports.updateUser = async (req, res, next) => {
   const { userId, name, dailyGoal, revisitDays, college } = req.body;
