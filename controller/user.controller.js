@@ -336,8 +336,9 @@ exports.getLeaderBoardData = async (req, res, next) => {
       if (withs === "ALL") {
         friends = await User.find();
         friends = friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
-        console.log({ friends, startIdx, limit });
-        friends = friends?.slice(startIdx, limit);
+
+        friends = friends?.slice(startIdx, endIdx);
+        console.log({ friends });
         totalDocs = await User.countDocuments();
         // friends = friends.map((f) => f._id.toString());
 
@@ -363,7 +364,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
       } else if (withs != "Friends") {
         friends = await User.find({ college: withs });
         friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
-        friends = friends?.slice(startIdx, limit);
+        friends = friends?.slice(startIdx, endIdx);
         totalDocs = await User.countDocuments({ college: withs });
         // friends = friends.map((f) => f._id.toString());
         friends.forEach((friend) => {
@@ -418,7 +419,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
       friendsData = friendsData.sort((a, b) => {
         return sorterFn(a, b, dayToCompare);
       });
-      friendsData = friendsData.slice(startIdx, limit);
+      friendsData = friendsData.slice(startIdx, endIdx);
       friendsData.forEach((friend) => {
         console.log(friend);
         let completedQuestions = friend?.completedQuestions?.filter((q) => {
@@ -468,7 +469,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
       }));
       console.log(friends);
       friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
-      friends = friends?.slice(startIdx, limit);
+      friends = friends?.slice(startIdx, endIdx);
       totalDocs = await User.countDocuments();
       friends.forEach((friend) => {
         let completedQuestions = friend?.completedQuestions?.filter((q) => {
@@ -497,7 +498,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
         }),
       }));
       friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
-      friends = friends?.slice(startIdx, limit);
+      friends = friends?.slice(startIdx, endIdx);
       totalDocs = await User.countDocuments({ college: withs });
 
       friends.forEach((friend) => {
@@ -552,7 +553,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
     friendsData = friendsData.sort((a, b) => {
       return sorterFn(a, b, dayToCompare);
     });
-    friendsData = friendsData.slice(startIdx, limit);
+    friendsData = friendsData.slice(startIdx, endIdx);
     friendsData.forEach((friend) => {
       let completedQuestions = friend?.completedQuestions?.filter((q) => {
         return new Date(q?.completedAt) >= new Date(dayToCompare);
