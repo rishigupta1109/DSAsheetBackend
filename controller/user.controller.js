@@ -336,6 +336,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
       if (withs === "ALL") {
         friends = await User.find();
         friends = friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
+        console.log({ friends, startIdx, limit });
         friends = friends?.slice(startIdx, limit);
         totalDocs = await User.countDocuments();
         // friends = friends.map((f) => f._id.toString());
@@ -551,7 +552,7 @@ exports.getLeaderBoardData = async (req, res, next) => {
     friendsData = friendsData.sort((a, b) => {
       return sorterFn(a, b, dayToCompare);
     });
-    friendsData = friendsData.slice(startIdx, endIdx);
+    friendsData = friendsData.slice(startIdx, limit);
     friendsData.forEach((friend) => {
       let completedQuestions = friend?.completedQuestions?.filter((q) => {
         return new Date(q?.completedAt) >= new Date(dayToCompare);
