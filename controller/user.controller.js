@@ -255,11 +255,11 @@ exports.toggleFriend = async (req, res, next) => {
 const sorterFn = (a, b, dayToCompare) => {
   const aQuestions =
     a?.completedQuestions?.filter(
-      (q) => new Date(q?.completedAt) >= dayToCompare
+      (q) => new Date(q?.completedAt) >= new Date(dayToCompare)
     )?.length || 0;
   const bQuestions =
     b?.completedQuestions?.filter(
-      (q) => new Date(q?.completedAt) >= dayToCompare
+      (q) => new Date(q?.completedAt) >= new Date(dayToCompare)
     )?.length || 0;
   if (aQuestions > bQuestions) return -1;
   else if (aQuestions < bQuestions) return 1;
@@ -336,7 +336,14 @@ exports.getLeaderBoardData = async (req, res, next) => {
       if (withs === "ALL") {
         friends = await User.find();
         friends = friends?.sort((a, b) => sorterFn(a, b, dayToCompare));
-
+        console.log(
+          friends.map((f) => ({
+            un: f.username,
+            ques: f?.completedQuestions?.filter((q) => {
+              return new Date(q?.completedAt) >= new Date(dayToCompare);
+            })?.length,
+          }))
+        );
         friends = friends?.slice(startIdx, endIdx);
         console.log({ friends });
         totalDocs = await User.countDocuments();

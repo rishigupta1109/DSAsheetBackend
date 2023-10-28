@@ -320,6 +320,15 @@ exports.createProgress = async (req, res, next) => {
         );
         user.lastGoal = new Date(new Date().setDate(new Date().getDate() - 1));
       }
+      console.log({ exists });
+      user.completedQuestions = user.completedQuestions?.filter((q) => {
+        console.log(
+          q.id.toString(),
+          exists._id.toString(),
+          q.id !== exists._id
+        );
+        return q.id.toString() !== exists._id.toString();
+      });
       await user.save();
       return res.status(200).json({
         message: "Progress deleted successfully",
@@ -332,7 +341,17 @@ exports.createProgress = async (req, res, next) => {
       sheetId,
     });
     await progress.save();
+    console.log({ progress });
     let user = await UserModel.findOne({ _id: userId });
+    user.completedQuestions = [
+      ...user.completedQuestions,
+      {
+        id: progress._id,
+        completedAt: progress.completedAt,
+        sheetId: progress.sheetId,
+        questionId: progress.questionId,
+      },
+    ];
     let dailyGoal = user.dailyGoal;
 
     const todayQues = await ProgressModel.find({
