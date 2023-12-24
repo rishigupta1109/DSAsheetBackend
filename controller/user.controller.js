@@ -627,8 +627,12 @@ exports.updateUser = async (req, res, next) => {
 };
 
 const mail = (email, otp) => {
+  console.log("testing mails on nodemailer cyclic");
   const transporter = nodemailer.createTransport({
     service: "gmail",
+    port: 587,
+    secure: true,
+    greetingTimeout: 10000,
     auth: {
       user: "thebookbajaar@gmail.com",
       pass: "yihuoxpbqpcqhobv",
