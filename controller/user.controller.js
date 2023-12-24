@@ -626,13 +626,10 @@ exports.updateUser = async (req, res, next) => {
   }
 };
 
-const mail = (email, otp) => {
+const mail = async (email, otp) => {
   console.log("testing mails on nodemailer cyclic");
   const transporter = nodemailer.createTransport({
     service: "gmail",
-    port: 587,
-    secure: true,
-    greetingTimeout: 10000,
     auth: {
       user: "thebookbajaar@gmail.com",
       pass: "yihuoxpbqpcqhobv",
@@ -646,7 +643,7 @@ const mail = (email, otp) => {
     text: `The otp to set your password is ${otp}. Thanks,Sheet Code`,
     replyTo: "thebookbajaar@gmail.com",
   };
-  transporter.sendMail(mailOptions, function (err, res) {
+  await transporter.sendMail(mailOptions, function (err, res) {
     if (err) {
       console.error("there was an error: ", err);
     } else {
@@ -694,7 +691,7 @@ const generateOtp = async (req, res, next) => {
         return next(new HttpError("something went wrong", 404));
       }
     }
-    mail(email, otp);
+    await mail(email, otp);
     res.json({ message: "otp sent to your number", status: "success" });
   } else {
     return next(new HttpError("user does not exists", 404));
@@ -796,7 +793,7 @@ exports.generateOtpforRegister = async (req, res, next) => {
         return next(new HttpError("something went wrong", 404));
       }
     }
-    mail(email, otp);
+    await mail(email, otp);
     res.json({ message: "otp sent to your email", status: "success" });
   } catch (err) {
     console.log(err);
